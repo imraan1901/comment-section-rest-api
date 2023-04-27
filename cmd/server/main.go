@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/imraan1901/comment-section-rest-api/internal/comment/db"
+	"github.com/imraan1901/comment-section-rest-api/internal/comment"
+	"github.com/imraan1901/comment-section-rest-api/internal/db"
 )
 
 // Run - is responsible for
@@ -24,6 +26,12 @@ func Run() error {
 	}
 
 	fmt.Println("successfully connected and pinged database")
+
+	cmtService := comment.NewService(db)
+	fmt.Println(cmtService.GetComment(
+		context.Background(),
+		"f30b6b33-5351-4112-a20c-fc98c9319a73",
+	))
 
 	return nil
 
