@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/imraan1901/comment-section-rest-api/internal/comment"
+	transportHttp "github.com/imraan1901/comment-section-rest-api/internal/transport/http"
 	"github.com/imraan1901/comment-section-rest-api/internal/db"
 )
 
@@ -29,20 +29,10 @@ func Run() error {
 
 	cmtService := comment.NewService(db)
 
-	cmtService.PostComment(
-		context.Background(),
-		comment.Comment{
-			ID: "f30b6b33-5351-4112-a20c-fc98c9319a73",
-			Slug: "Manual test",
-			Author: "Imraan",
-			Body: "Hello world",
-		},
-	)
-
-	fmt.Println(cmtService.GetComment(
-		context.Background(),
-		"f30b6b33-5351-4112-a20c-fc98c9319a73",
-	))
+	httpHandler := transportHttp.NewHandler(cmtService)
+	if err := httpHandler.Serve(); err != nil {
+		return err
+	}
 
 	return nil
 
