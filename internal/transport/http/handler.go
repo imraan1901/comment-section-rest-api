@@ -1,8 +1,13 @@
 package http
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -40,8 +45,27 @@ func (h *Handler) mapRoutes() {
 }
 
 func (h *Handler) Serve() error {
-	if err := h.Server.ListenAndServe(); err != nil {
-		return err
-	}
+
+	// This will run the go func in a thread ()
+	go func () {
+		if err := h.Server.ListenAndServe(); err != nil {
+			log.Println(err.Error())
+		}
+	} ()
+
+	// Make a channel and wait here until an interrupt happens on this thread
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+
+	// Once an interrupt happens shutdown the server in 15 seconds 
+	ctx, cancel := context.WithTimeout(context.Background(), 15 * time.Second)
+	// defer func gets called at the end of the 15 seconds to kill the main thread
+	defer cancel()
+	// Withing the 15 seconds process the remaining in flight requests
+	h.Server.Shutdown(ctx)
+
+	log.Println("Shutting down gracefully")
+
 	return nil
 }
