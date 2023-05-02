@@ -104,10 +104,10 @@ func (d *Database) UpdateComment(
 	}
 
 	rows, err := d.Client.NamedQueryContext(
-		ctx, 
-		`UPDATE comments 
-		slug = :slug
-		author = :author
+		ctx,
+		`UPDATE comments SET
+		slug = :slug,
+		author = :author,
 		body = :body
 		WHERE id = :id`,
 		cmtRow,
@@ -117,7 +117,7 @@ func (d *Database) UpdateComment(
 	}
 
 	if err := rows.Close(); err != nil {
-		return comment.Comment{}, fmt.Errorf("faileld to close rows: %w", err)
+		return comment.Comment{}, fmt.Errorf("failed to close rows: %w", err)
 	}
 
 	return convertCommentRowToComment(cmtRow), nil
