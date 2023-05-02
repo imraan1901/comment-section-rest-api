@@ -1,4 +1,4 @@
-Comment Section REST API
+Comment Section REST API Course
 ================================
 
 ## Tools Needed
@@ -9,4 +9,4 @@ Comment Section REST API
 * docker-compose
 * task
 
-## This is a work in progress
+## This is in progress
