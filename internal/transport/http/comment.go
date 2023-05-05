@@ -9,7 +9,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
-	"github.com/imraan1901/comment-section-rest-api/internal/comment"
+	"github.com/imraan1901/comment-section-rest-api/internal/datastructs"
+
 )
 
 type Response struct {
@@ -17,9 +18,9 @@ type Response struct {
 }
 
 type CommentService interface {
-	PostComment(context.Context, comment.Comment) (comment.Comment, error)
-	GetComment(ctx context.Context, ID string) (comment.Comment, error)
-	UpdateComment(ctx context.Context, ID string, newCmt comment.Comment) (comment.Comment, error)
+	PostComment(context.Context, datastructs.Comment) (datastructs.Comment, error)
+	GetComment(ctx context.Context, ID string) (datastructs.Comment, error)
+	UpdateComment(ctx context.Context, ID string, newCmt datastructs.Comment) (datastructs.Comment, error)
 	DeleteComment(ctx context.Context, ID string) error
 }
 
@@ -30,8 +31,8 @@ type PostCommentRequest struct {
 	Body   string `json:"body" validate:"required"`
 }
 
-func convertPostCommentRequestToComment(c PostCommentRequest) comment.Comment {
-	return comment.Comment{
+func convertPostCommentRequestToComment(c PostCommentRequest) datastructs.Comment {
+	return datastructs.Comment{
 		Slug:   c.Slug,
 		Author: c.Author,
 		Body:   c.Body,
@@ -92,7 +93,7 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cmt comment.Comment
+	var cmt datastructs.Comment
 	if err := json.NewDecoder(r.Body).Decode(&cmt); err != nil {
 		return
 	}

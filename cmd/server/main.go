@@ -15,6 +15,7 @@ func Run() error {
 
 	fmt.Println("Starting up our application")
 
+	// DB layer
 	db, err := db.NewDatabase()
 	if err != nil {
 		fmt.Println("Failed to connect to the database")
@@ -27,8 +28,10 @@ func Run() error {
 
 	fmt.Println("successfully connected and pinged database")
 
+	// DB layer passed into business layer
 	cmtService := comment.NewService(db)
 
+	// business layer passed into transport/http layer
 	httpHandler := transportHttp.NewHandler(cmtService)
 	if err := httpHandler.Serve(); err != nil {
 		return err

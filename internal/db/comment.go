@@ -8,7 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/imraan1901/comment-section-rest-api/internal/comment"
+	"github.com/imraan1901/comment-section-rest-api/internal/datastructs"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -19,8 +19,8 @@ type CommentRow struct {
 	Author sql.NullString
 }
 
-func convertCommentRowToComment(c CommentRow) comment.Comment {
-	return comment.Comment{
+func convertCommentRowToComment(c CommentRow) datastructs.Comment {
+	return datastructs.Comment{
 		ID:     c.ID,
 		Slug:   c.Slug.String,
 		Body:   c.Slug.String,
@@ -31,7 +31,7 @@ func convertCommentRowToComment(c CommentRow) comment.Comment {
 func (d *Database) GetComment(
 	ctx context.Context,
 	uuid string,
-) (comment.Comment, error) {
+) (datastructs.Comment, error) {
 
 	var cmtRow CommentRow
 	row := d.Client.QueryRowContext(
@@ -44,13 +44,13 @@ func (d *Database) GetComment(
 
 	err := row.Scan(&cmtRow.ID, &cmtRow.Slug, &cmtRow.Body, &cmtRow.Author)
 	if err != nil {
-		return comment.Comment{}, fmt.Errorf("error fetching comment by uuid: %w", err)
+		return datastructs.Comment{}, fmt.Errorf("error fetching comment by uuid: %w", err)
 	}
 
 	return convertCommentRowToComment(cmtRow), nil
 }
 
-func (d *Database) PostComment(ctx context.Context, cmt comment.Comment) (comment.Comment, error) {
+func (d *Database) PostComment(ctx context.Context, cmt datastructs.Comment) (datastructs.Comment, error) {
 
 	cmt.ID = uuid.NewV4().String()
 
@@ -69,10 +69,10 @@ func (d *Database) PostComment(ctx context.Context, cmt comment.Comment) (commen
 		postRow,
 	)
 	if err != nil {
-		return comment.Comment{}, fmt.Errorf("failed to insert comment: %w", err)
+		return datastructs.Comment{}, fmt.Errorf("failed to insert comment: %w", err)
 	}
 	if err := rows.Close(); err != nil {
-		return comment.Comment{}, fmt.Errorf("failed to close rows: %w", err)
+		return datastructs.Comment{}, fmt.Errorf("failed to close rows: %w", err)
 	}
 
 	return cmt, nil
@@ -94,8 +94,8 @@ func (d *Database) DeleteComment(ctx context.Context, id string) error {
 func (d *Database) UpdateComment(
 	ctx context.Context,
 	id string,
-	cmt comment.Comment,
-) (comment.Comment, error) {
+	cmt datastructs.Comment,
+) (datastructs.Comment, error) {
 	cmtRow := CommentRow{
 		ID:     id,
 		Slug:   sql.NullString{String: cmt.Slug, Valid: true},
@@ -113,13 +113,15 @@ func (d *Database) UpdateComment(
 		cmtRow,
 	)
 	if err != nil {
-		return comment.Comment{}, fmt.Errorf("failed to update comment: %w", err)
+		return datastructs.Comment{}, fmt.Errorf("failed to update comment: %w", err)
 	}
 
 	if err := rows.Close(); err != nil {
-		return comment.Comment{}, fmt.Errorf("failed to close rows: %w", err)
+		return datastructs.Comment{}, fmt.Errorf("failed to close rows: %w", err)
 	}
 
 	return convertCommentRowToComment(cmtRow), nil
 
 }
+
+
