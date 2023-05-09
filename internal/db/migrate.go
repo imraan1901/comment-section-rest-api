@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -8,9 +9,15 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"go.opentelemetry.io/otel"
 )
 
-func (d *Database) MigrateDB() error {
+// name is the Tracer name used to identify this instrumentation library.
+
+func (d *Database) MigrateDB(ctx context.Context) error {
+
+	_, span := otel.Tracer(name).Start(ctx, "Poll")
+	defer span.End()
 
 	fmt.Println("migrating our database")
 

@@ -4,15 +4,25 @@ import (
 	"context"
 	"fmt"
 	"os"
-	_ "github.com/lib/pq"
+
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"go.opentelemetry.io/otel"
 )
+
+// name is the Tracer name used to identify this instrumentation library.
+const name = "db"
+
 
 type Database struct {
 	Client *sqlx.DB
 }
 
-func NewDatabase() (*Database, error) {
+func NewDatabase(ctx context.Context) (*Database, error) {
+
+	_, span := otel.Tracer(name).Start(ctx, "db")
+	defer span.End()
+
 	connectionString := fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		os.Getenv("DB_HOST"),
@@ -34,5 +44,8 @@ func NewDatabase() (*Database, error) {
 }
 
 func (d *Database) Ping(ctx context.Context) error {
+	_, span := otel.Tracer(name).Start(ctx, "ping")
+	defer span.End()
+	
 	return d.Client.DB.PingContext(ctx)
 }

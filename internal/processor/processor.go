@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	//python3 "github.com/go-python/cpy3"
 	"github.com/imraan1901/comment-section-rest-api/internal/datastructs"
-	python3 "github.com/go-python/cpy3"
 )
 
 type ProcessStatus int
@@ -17,26 +17,18 @@ const (
 	UnProcessed               = iota     // 2
 )
 
+// Returns any type interface for our processor 
+// so any module can call this code
 type PService struct {
-	client python3.PyObject
+	processor interface{}
 }
 
+// Any code can call the process comment function when a NewProcessor is made
 func NewProcessor() (*PService, error) {
 
-	client = python.Py_Initialize()
-
-	if !python3.Py_IsInitialized() {
-		fmt.Println("Error initializing the python interpreter")
-		os.Exit(1)
-	}
-
-	//processor, err := client.
-	if err != nil {
-		return nil, err
-	}
-
+	var any interface{}
 	return &PService{
-		client: processor,
+		processor: any,
 	}, nil
 }
 
@@ -54,6 +46,10 @@ func (w *PService) ProcessComment(
 	ctx context.Context,
 	cmt datastructs.Comment) (datastructs.Comment, error) {
 
+	//defer python3.Py_Finalize()
+	//python3.Py_Initialize()
+	
+
 	var pcmt ProcessedComment
 	var err error
 	if err != nil {
@@ -61,9 +57,22 @@ func (w *PService) ProcessComment(
 		return datastructs.Comment{}, err
 	}
 
-	var processed interface{}
+	//var processed interface{}
 
-	processed, err = w.client.Eval("pi")
+	//processed = python3.PyRun_SimpleString("print('hello world')")
+	pcmt.Processed_Author = fmt.Sprintf("%v", "processed")
+	pcmt.Processed_Body = fmt.Sprintf("%v", "processed")
+	pcmt.Processed_Slug = fmt.Sprintf("%v", "processed")
+
+	newCmt := datastructs.Comment{
+		ID:     cmt.ID,
+		Slug:   pcmt.Processed_Slug,
+		Body:   pcmt.Processed_Body,
+		Author: pcmt.Processed_Author,
+	}
+
+
+	/*
 	if err != nil {
 		fmt.Println("Failed to process data")
 		return datastructs.Comment{}, err
@@ -90,6 +99,7 @@ func (w *PService) ProcessComment(
 		Body:   pcmt.Processed_Body,
 		Author: pcmt.Processed_Author,
 	}
+	*/
 
 	return newCmt, nil
 }

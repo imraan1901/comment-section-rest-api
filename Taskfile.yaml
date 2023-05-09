@@ -15,7 +15,7 @@ tasks:
 
   run:
     cmds:
-      - docker-compose up --build
+      - docker-compose --verbose up --build
 
   integration-test:
     cmds:

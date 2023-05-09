@@ -1,27 +1,94 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"log"
+	"os"
 
 	"github.com/imraan1901/comment-section-rest-api/internal/comment"
-	transportHttp "github.com/imraan1901/comment-section-rest-api/internal/transport/http"
 	"github.com/imraan1901/comment-section-rest-api/internal/db"
+	transportHttp "github.com/imraan1901/comment-section-rest-api/internal/transport/http"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
+
+// newResource returns a resource describing this application.
+func newResource() *resource.Resource {
+	r, _ := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName("main"),
+			semconv.ServiceVersion("v0.1.0"),
+			attribute.String("environment", "main"),
+		),
+	)
+	return r
+}
+
+// newExporter returns a console exporter.
+func newExporter(w io.Writer) (trace.SpanExporter, error) {
+	return stdouttrace.New(
+		stdouttrace.WithWriter(w),
+		// Use human-readable output.
+		stdouttrace.WithPrettyPrint(),
+		// Do not print timestamps for the demo.
+		stdouttrace.WithoutTimestamps(),
+	)
+}
+
+// name is the Tracer name used to identify this instrumentation library.
+const name = "main"
 
 // Run - is responsible for
 // the instantiation and startup of our
 // go application
 func Run() error {
 
+	l := log.New(os.Stdout, "", 0)
+
+	// Write telemetry data to a file.
+	f, err := os.Create("traces.txt")
+	if err != nil {
+		l.Fatal(err)
+	}
+	defer f.Close()
+
+	exp, err := newExporter(f)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(newResource()),
+	)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			l.Fatal(err)
+		}
+	}()
+	otel.SetTracerProvider(tp)
+
+	ctx, span := otel.Tracer(name).Start(context.Background(), "main")
+	defer span.End()
+
 	fmt.Println("Starting up our application")
 
 	// DB layer
-	db, err := db.NewDatabase()
+	db, err := db.NewDatabase(ctx)
 	if err != nil {
 		fmt.Println("Failed to connect to the database")
 		return err
 	}
-	if err := db.MigrateDB(); err != nil {
+	if err := db.MigrateDB(ctx); err != nil {
 		fmt.Println("failed to migrate database")
 		return err
 	}
