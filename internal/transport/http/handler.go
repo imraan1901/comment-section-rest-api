@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel"
+
+	tr "go.opentelemetry.io/otel/trace"
 )
 
 type Handler struct {
@@ -17,6 +20,9 @@ type Handler struct {
 	Service CommentService
 	Server  *http.Server
 }
+
+// name is the Tracer name used to identify this instrumentation library.
+const name = "http"
 
 func NewHandler(service CommentService) *Handler {
 	h := &Handler{
@@ -48,7 +54,11 @@ func (h *Handler) mapRoutes() {
 
 }
 
-func (h *Handler) Serve() error {
+func (h *Handler) Serve(ctx context.Context) error {
+
+	startTime := time.Now()
+	_, span := otel.Tracer(name).Start(ctx, "Serve", tr.WithTimestamp(startTime))
+	defer span.End(tr.WithTimestamp(time.Now()))
 
 	// This will run the go func in a thread ()
 	go func() {
@@ -63,7 +73,7 @@ func (h *Handler) Serve() error {
 	<-c
 
 	// Once an interrupt happens shutdown the server in 15 seconds
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	// defer func gets called at the end of the 15 seconds to kill the main thread
 	defer cancel()
 	// Withing the 15 seconds process the remaining in flight requests

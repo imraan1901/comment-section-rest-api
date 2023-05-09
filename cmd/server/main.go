@@ -6,11 +6,15 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"time"
 
 	"github.com/imraan1901/comment-section-rest-api/internal/comment"
 	"github.com/imraan1901/comment-section-rest-api/internal/db"
 	transportHttp "github.com/imraan1901/comment-section-rest-api/internal/transport/http"
 
+
+	tr "go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -53,9 +57,11 @@ const name = "main"
 func Run() error {
 
 	l := log.New(os.Stdout, "", 0)
-
+	// Added time format used by API requests
+	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	// Write telemetry data to a file.
-	f, err := os.Create("traces.txt")
+	tracerFile := path.Join("tracers", now+"_traces.txt")
+	f, err := os.Create(tracerFile)
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -77,8 +83,9 @@ func Run() error {
 	}()
 	otel.SetTracerProvider(tp)
 
-	ctx, span := otel.Tracer(name).Start(context.Background(), "main")
-	defer span.End()
+	startTime := time.Now()
+	ctx, span := otel.Tracer(name).Start(context.Background(), "main", tr.WithTimestamp(startTime))
+	defer span.End(tr.WithTimestamp(time.Now()))
 
 	fmt.Println("Starting up our application")
 
@@ -100,7 +107,7 @@ func Run() error {
 
 	// business layer passed into transport/http layer
 	httpHandler := transportHttp.NewHandler(cmtService)
-	if err := httpHandler.Serve(); err != nil {
+	if err := httpHandler.Serve(ctx); err != nil {
 		return err
 	}
 
